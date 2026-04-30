@@ -1,0 +1,57 @@
+----------------------------------------------------------------------------------------
+Create an android project in java which is a game of "Unblock me" or "Car unblock".
+It can have multiple levels
+create a single prompt to use to AI coding
+
+
+Output
+
+----------------------------------------------------------------------------------------
+Create a complete Android game project in Java using Android Studio. The game should be similar to "Unblock Me" (a sliding block puzzle game).
+
+Requirements:
+
+Core Gameplay:
+The game board is a 6x6 grid.
+There are multiple rectangular blocks (cars/trucks) of varying lengths (2 or 3 units).
+Blocks can only move in the direction of their orientation (horizontal or vertical).
+One special block (the red car) must be moved to the exit on the right side of the grid.
+The player wins when the red car reaches the exit.
+Touch Controls:
+Implement drag/swipe controls to move blocks.
+Movement should snap to the grid and prevent overlapping with other blocks.
+Levels:
+Create at least 10 predefined levels with increasing difficulty.
+Store level configurations in JSON or Java data structures.
+Add a level selection screen.
+UI/UX:
+Main menu with "Play", "Select Level", and "Reset".
+Game screen showing the board, moves counter, and restart button.
+Show a success dialog when the level is completed.
+Architecture:
+Use clean code structure (separate classes for GameBoard, Block, Level, GameView, etc.).
+Follow MVC or MVVM pattern.
+Graphics:
+Use simple colored rectangles or drawable assets for blocks.
+Highlight the target (red car) clearly.
+Additional Features:
+Moves counter.
+Reset/restart level option.
+Smooth animations when blocks move.
+Code Expectations:
+Provide complete working Java code for all activities, views, and models.
+Include XML layouts.
+Include comments explaining important logic.
+Optional Enhancements (if possible):
+Sound effects on movement and win.
+Save progress using SharedPreferences.
+
+Output:
+
+Full Android Studio project structure.
+All Java classes and XML files.
+Instructions to build and run the project.
+
+
+
+----------------------------------------------------------------------------------------
