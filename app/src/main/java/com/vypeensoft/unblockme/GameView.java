@@ -11,6 +11,11 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import java.io.InputStream;
+import java.io.IOException;
+
 public class GameView extends View {
     private GameEngine engine;
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -19,6 +24,12 @@ public class GameView extends View {
     private float lastTouchX, lastTouchY;
     private OnGameListener listener;
 
+    private Bitmap bmpTarget;
+    private Bitmap bmpWoodH2;
+    private Bitmap bmpWoodH3;
+    private Bitmap bmpWoodV2;
+    private Bitmap bmpWoodV3;
+
     public interface OnGameListener {
         void onMove();
         void onWin();
@@ -26,6 +37,19 @@ public class GameView extends View {
 
     public GameView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+        loadBitmaps(context);
+    }
+
+    private void loadBitmaps(Context context) {
+        try {
+            bmpTarget = BitmapFactory.decodeStream(context.getAssets().open("tiles/wood/red_block_1.png"));
+            bmpWoodH2 = BitmapFactory.decodeStream(context.getAssets().open("tiles/wood/wood_block_h2.png"));
+            bmpWoodH3 = BitmapFactory.decodeStream(context.getAssets().open("tiles/wood/wood_block_h3.png"));
+            bmpWoodV2 = BitmapFactory.decodeStream(context.getAssets().open("tiles/wood/wood_block_v2.png"));
+            bmpWoodV3 = BitmapFactory.decodeStream(context.getAssets().open("tiles/wood/wood_block_v3.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void setEngine(GameEngine engine) {
@@ -74,20 +98,29 @@ public class GameView extends View {
 
         // Draw blocks
         for (Block b : engine.getBlocks()) {
-            paint.setColor(b.color);
             float left = b.x * cellSize + 8;
             float top = b.y * cellSize + 8;
             float right = (b.isHorizontal ? b.x + b.length : b.x + 1) * cellSize - 8;
             float bottom = (b.isHorizontal ? b.y + 1 : b.y + b.length) * cellSize - 8;
             
             RectF rect = new RectF(left, top, right, bottom);
-            canvas.drawRoundRect(rect, 20, 20, paint);
 
-            // Add a subtle inner shadow/highlight
-            paint.setColor(Color.WHITE);
-            paint.setAlpha(60);
-            canvas.drawRoundRect(new RectF(left + 5, top + 5, right - 5, top + 15), 10, 10, paint);
-            paint.setAlpha(255);
+            Bitmap bmpToDraw = null;
+            if (b.isTarget) {
+                bmpToDraw = bmpTarget;
+            } else if (b.isHorizontal) {
+                bmpToDraw = (b.length == 3) ? bmpWoodH3 : bmpWoodH2;
+            } else {
+                bmpToDraw = (b.length == 3) ? bmpWoodV3 : bmpWoodV2;
+            }
+
+            if (bmpToDraw != null) {
+                canvas.drawBitmap(bmpToDraw, null, rect, paint);
+            } else {
+                // Fallback
+                paint.setColor(b.color);
+                canvas.drawRoundRect(rect, 20, 20, paint);
+            }
 
             // Draw highlight for selected
             if (b == selectedBlock) {
