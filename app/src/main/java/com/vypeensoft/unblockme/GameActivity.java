@@ -2,6 +2,8 @@ package com.vypeensoft.unblockme;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,7 +13,23 @@ import android.view.View;
 public class GameActivity extends AppCompatActivity implements GameView.OnGameListener {
     private GameView gameView;
     private GameEngine engine;
-    private TextView tvMoves, tvLevel;
+    private TextView tvMoves, tvLevel, tvTime;
+    private long startTime;
+    private boolean timerStarted;
+    private Handler timerHandler = new Handler();
+    private Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long millis = SystemClock.uptimeMillis() - startTime;
+            int seconds = (int) (millis / 1000);
+            int minutes = seconds / 60;
+            seconds = seconds % 60;
+            if (tvTime != null) {
+                tvTime.setText(String.format("Time: %02d:%02d", minutes, seconds));
+            }
+            timerHandler.postDelayed(this, 500);
+        }
+    };
     private int currentLevelIndex;
     private String currentPack;
     private List<Level> levels;
@@ -24,10 +42,13 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
 
         gameView = findViewById(R.id.gameView);
         tvMoves = findViewById(R.id.tvMoves);
+        tvTime = findViewById(R.id.tvTime);
         tvLevel = findViewById(R.id.tvLevel);
         Button btnReset = findViewById(R.id.btnReset);
         Button btnUndo = findViewById(R.id.btnUndo);
         btnSolution = findViewById(R.id.btnSolution);
+        TextView btnPrev = findViewById(R.id.btnPrev);
+        TextView btnNext = findViewById(R.id.btnNext);
 
         currentPack = getIntent().getStringExtra("PACK_NAME");
         if (currentPack == null) currentPack = "beginner";
@@ -53,10 +74,30 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
                 gameView.playSolution(moves);
             }
         });
+        
+        btnPrev.setOnClickListener(v -> {
+            if (currentLevelIndex > 0) {
+                loadLevel(currentLevelIndex - 1);
+            }
+        });
+
+        btnNext.setOnClickListener(v -> {
+            if (currentLevelIndex < levels.size() - 1) {
+                loadLevel(currentLevelIndex + 1);
+            }
+        });
+
         gameView.setOnGameListener(this);
     }
 
+    private void stopTimer() {
+        timerStarted = false;
+        timerHandler.removeCallbacks(timerRunnable);
+    }
+
     private void loadLevel(int index) {
+        stopTimer();
+        if (tvTime != null) tvTime.setText("Time: 00:00");
         currentLevelIndex = index;
         Level level = levels.get(index);
         
@@ -65,6 +106,11 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
         } else {
             btnSolution.setVisibility(View.GONE);
         }
+
+        TextView btnPrev = findViewById(R.id.btnPrev);
+        TextView btnNext = findViewById(R.id.btnNext);
+        btnPrev.setVisibility(index > 0 ? View.VISIBLE : View.INVISIBLE);
+        btnNext.setVisibility(index < levels.size() - 1 ? View.VISIBLE : View.INVISIBLE);
 
         engine = new GameEngine(level.getBlocksCopy());
         gameView.setEngine(engine);
@@ -78,11 +124,17 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
 
     @Override
     public void onMove() {
+        if (!timerStarted) {
+            timerStarted = true;
+            startTime = SystemClock.uptimeMillis();
+            timerHandler.postDelayed(timerRunnable, 0);
+        }
         updateMoves();
     }
 
     @Override
     public void onWin() {
+        stopTimer();
         // Save progress
         getSharedPreferences("GAME_PROGRESS", MODE_PRIVATE)
                 .edit()
