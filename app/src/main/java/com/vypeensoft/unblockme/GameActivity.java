@@ -63,18 +63,14 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
                 .putInt("LAST_COMPLETED_" + currentPack, currentLevelIndex)
                 .apply();
 
-        new AlertDialog.Builder(this)
-                .setTitle("Level Completed!")
-                .setMessage("Congratulations! You solved level " + levels.get(currentLevelIndex).levelNumber + " in " + engine.getMoves() + " moves.")
-                .setPositiveButton("Next Level", (dialog, which) -> {
-                    if (currentLevelIndex + 1 < levels.size()) {
-                        loadLevel(currentLevelIndex + 1);
-                    } else {
-                        finish();
-                    }
-                })
-                .setNegativeButton("Menu", (dialog, which) -> finish())
-                .setCancelable(false)
-                .show();
+        String msg = "Solved level " + levels.get(currentLevelIndex).levelNumber + " in " + engine.getMoves() + " moves!";
+        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
+
+        if (currentLevelIndex + 1 < levels.size()) {
+            loadLevel(currentLevelIndex + 1);
+        } else {
+            android.widget.Toast.makeText(this, "Pack Completed!", android.widget.Toast.LENGTH_SHORT).show();
+            finish();
+        }
     }
 }

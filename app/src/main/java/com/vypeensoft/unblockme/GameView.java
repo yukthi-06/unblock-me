@@ -135,7 +135,12 @@ public class GameView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (engine == null || engine.isGameOver()) return false;
+        if (engine == null) return false;
+        
+        // If game is already over and they try a new touch, ignore
+        if (engine.isGameOver() && event.getAction() == MotionEvent.ACTION_DOWN) {
+            return false;
+        }
 
         float x = event.getX();
         float y = event.getY();
@@ -152,7 +157,7 @@ public class GameView extends View {
                 return selectedBlock != null;
 
             case MotionEvent.ACTION_MOVE:
-                if (selectedBlock != null) {
+                if (selectedBlock != null && !engine.isGameOver()) {
                     float dx = x - lastTouchX;
                     float dy = y - lastTouchY;
 
@@ -160,16 +165,24 @@ public class GameView extends View {
                         if (Math.abs(dx) >= cellSize) {
                             int direction = dx > 0 ? 1 : -1;
                             if (engine.moveBlock(selectedBlock, selectedBlock.x + direction, selectedBlock.y)) {
-                                lastTouchX = x;
+                                lastTouchX += direction * cellSize;
                                 if (listener != null) listener.onMove();
+                                if (engine.isGameOver() && listener != null) {
+                                    listener.onWin();
+                                    selectedBlock = null;
+                                }
                             }
                         }
                     } else {
                         if (Math.abs(dy) >= cellSize) {
                             int direction = dy > 0 ? 1 : -1;
                             if (engine.moveBlock(selectedBlock, selectedBlock.x, selectedBlock.y + direction)) {
-                                lastTouchY = y;
+                                lastTouchY += direction * cellSize;
                                 if (listener != null) listener.onMove();
+                                if (engine.isGameOver() && listener != null) {
+                                    listener.onWin();
+                                    selectedBlock = null;
+                                }
                             }
                         }
                     }
@@ -179,9 +192,6 @@ public class GameView extends View {
 
             case MotionEvent.ACTION_UP:
                 selectedBlock = null;
-                if (engine.isGameOver() && listener != null) {
-                    listener.onWin();
-                }
                 invalidate();
                 break;
         }
