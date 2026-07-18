@@ -13,6 +13,9 @@ import androidx.annotation.Nullable;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.animation.ValueAnimator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.Animator;
 import java.io.InputStream;
 import java.io.IOException;
 
@@ -23,6 +26,9 @@ public class GameView extends View {
     private Block selectedBlock = null;
     private float lastTouchX, lastTouchY;
     private OnGameListener listener;
+
+    private boolean isAnimatingWin = false;
+    private float animatedTargetX = -1f;
 
     private Bitmap bmpTarget;
     private Bitmap bmpWoodH2;
@@ -98,9 +104,14 @@ public class GameView extends View {
 
         // Draw blocks
         for (Block b : engine.getBlocks()) {
-            float left = b.x * cellSize + 8;
+            float blockX = b.x;
+            if (b.isTarget && isAnimatingWin && animatedTargetX >= 0) {
+                blockX = animatedTargetX;
+            }
+
+            float left = blockX * cellSize + 8;
             float top = b.y * cellSize + 8;
-            float right = (b.isHorizontal ? b.x + b.length : b.x + 1) * cellSize - 8;
+            float right = (b.isHorizontal ? blockX + b.length : blockX + 1) * cellSize - 8;
             float bottom = (b.isHorizontal ? b.y + 1 : b.y + b.length) * cellSize - 8;
             
             RectF rect = new RectF(left, top, right, bottom);
@@ -135,7 +146,7 @@ public class GameView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (engine == null) return false;
+        if (engine == null || isAnimatingWin) return false;
         
         // If game is already over and they try a new touch, ignore
         if (engine.isGameOver() && event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -167,7 +178,10 @@ public class GameView extends View {
                             if (engine.moveBlock(selectedBlock, selectedBlock.x + direction, selectedBlock.y)) {
                                 lastTouchX += direction * cellSize;
                                 if (listener != null) listener.onMove();
-                                if (engine.isGameOver() && listener != null) {
+                                if (engine.isPathClearForTarget()) {
+                                    startWinAnimation();
+                                    selectedBlock = null;
+                                } else if (engine.isGameOver() && listener != null) {
                                     listener.onWin();
                                     selectedBlock = null;
                                 }
@@ -179,7 +193,10 @@ public class GameView extends View {
                             if (engine.moveBlock(selectedBlock, selectedBlock.x, selectedBlock.y + direction)) {
                                 lastTouchY += direction * cellSize;
                                 if (listener != null) listener.onMove();
-                                if (engine.isGameOver() && listener != null) {
+                                if (engine.isPathClearForTarget()) {
+                                    startWinAnimation();
+                                    selectedBlock = null;
+                                } else if (engine.isGameOver() && listener != null) {
                                     listener.onWin();
                                     selectedBlock = null;
                                 }
@@ -196,5 +213,41 @@ public class GameView extends View {
                 break;
         }
         return true;
+    }
+
+    private void startWinAnimation() {
+        isAnimatingWin = true;
+        Block target = null;
+        for (Block b : engine.getBlocks()) {
+            if (b.isTarget) {
+                target = b;
+                break;
+            }
+        }
+        if (target == null) return;
+        
+        final Block finalTarget = target;
+        float startX = target.x;
+        float endX = 6f - target.length;
+        
+        ValueAnimator animator = ValueAnimator.ofFloat(startX, endX);
+        animator.setDuration(400);
+        animator.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+        animator.addUpdateListener(animation -> {
+            animatedTargetX = (float) animation.getAnimatedValue();
+            invalidate();
+        });
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                finalTarget.x = (int) endX;
+                engine.setGameOver(true);
+                isAnimatingWin = false;
+                if (listener != null) {
+                    listener.onWin();
+                }
+            }
+        });
+        animator.start();
     }
 }

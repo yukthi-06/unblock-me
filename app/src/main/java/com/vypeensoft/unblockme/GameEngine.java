@@ -80,4 +80,29 @@ public class GameEngine {
             }
         }
     }
+
+    public void setGameOver(boolean over) {
+        this.isGameOver = over;
+    }
+
+    public boolean isPathClearForTarget() {
+        Block target = null;
+        for (Block b : blocks) {
+            if (b.isTarget) {
+                target = b;
+                break;
+            }
+        }
+        if (target == null) return false;
+
+        if (target.x + target.length >= GRID_SIZE) return false; // Already at the end
+
+        for (int x = target.x + target.length; x < GRID_SIZE; x++) {
+            for (Block other : blocks) {
+                if (other == target) continue;
+                if (other.contains(x, target.y)) return false;
+            }
+        }
+        return true;
+    }
 }
