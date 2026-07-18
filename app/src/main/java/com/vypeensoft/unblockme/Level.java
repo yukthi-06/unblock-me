@@ -5,6 +5,8 @@ import java.util.List;
 
 public class Level {
     public int levelNumber;
+    public String difficulty;
+    public int minimumMoves;
     public List<Block> blocks;
 
     public Level(int levelNumber) {

@@ -3,14 +3,14 @@ package com.vypeensoft.unblockme;
 import android.graphics.Color;
 
 public class Block {
-    public int id;
+    public String id;
     public int x, y; // Top-left position
     public int length;
     public boolean isHorizontal;
     public int color;
     public boolean isTarget;
 
-    public Block(int id, int x, int y, int length, boolean isHorizontal, int color, boolean isTarget) {
+    public Block(String id, int x, int y, int length, boolean isHorizontal, int color, boolean isTarget) {
         this.id = id;
         this.x = x;
         this.y = y;

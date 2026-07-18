@@ -12,6 +12,7 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
     private GameEngine engine;
     private TextView tvMoves, tvLevel;
     private int currentLevelIndex;
+    private String currentPack;
     private List<Level> levels;
 
     @Override
@@ -24,7 +25,10 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
         tvLevel = findViewById(R.id.tvLevel);
         Button btnReset = findViewById(R.id.btnReset);
 
-        levels = LevelManager.getLevels();
+        currentPack = getIntent().getStringExtra("PACK_NAME");
+        if (currentPack == null) currentPack = "beginner";
+
+        levels = LevelManager.getLevels(currentPack);
         currentLevelIndex = getIntent().getIntExtra("LEVEL_INDEX", 0);
 
         loadLevel(currentLevelIndex);
@@ -56,7 +60,7 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
         // Save progress
         getSharedPreferences("GAME_PROGRESS", MODE_PRIVATE)
                 .edit()
-                .putInt("LAST_COMPLETED", currentLevelIndex)
+                .putInt("LAST_COMPLETED_" + currentPack, currentLevelIndex)
                 .apply();
 
         new AlertDialog.Builder(this)

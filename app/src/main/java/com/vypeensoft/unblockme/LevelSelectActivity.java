@@ -18,10 +18,19 @@ public class LevelSelectActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_level_select);
 
-        GridView gridView = findViewById(R.id.levelGridView);
-        List<Level> levels = LevelManager.getLevels();
+        String tempPack = getIntent().getStringExtra("PACK_NAME");
+        final String packName = (tempPack == null) ? "beginner" : tempPack;
         
-        int lastCompleted = getSharedPreferences("GAME_PROGRESS", MODE_PRIVATE).getInt("LAST_COMPLETED", -1);
+        GridView gridView = findViewById(R.id.levelGridView);
+        List<Level> levels = LevelManager.getLevels(packName);
+        
+        int lastCompleted = getSharedPreferences("GAME_PROGRESS", MODE_PRIVATE).getInt("LAST_COMPLETED_" + packName, -1);
+
+        // Save the last selected pack
+        getSharedPreferences("GAME_PROGRESS", MODE_PRIVATE)
+                .edit()
+                .putString("LAST_PACK", packName)
+                .apply();
 
         gridView.setAdapter(new BaseAdapter() {
             @Override
@@ -52,6 +61,8 @@ public class LevelSelectActivity extends AppCompatActivity {
 
                 convertView.setOnClickListener(v -> {
                     Intent intent = new Intent(LevelSelectActivity.this, GameActivity.class);
+                    // Pass packName down to GameActivity
+                    intent.putExtra("PACK_NAME", packName);
                     intent.putExtra("LEVEL_INDEX", position);
                     startActivity(intent);
                 });
