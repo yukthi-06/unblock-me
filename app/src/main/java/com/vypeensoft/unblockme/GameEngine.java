@@ -1,12 +1,25 @@
 package com.vypeensoft.unblockme;
 
 import java.util.List;
+import java.util.Stack;
 
 public class GameEngine {
+    public static class MoveRecord {
+        public Block block;
+        public int oldX;
+        public int oldY;
+        public MoveRecord(Block block, int oldX, int oldY) {
+            this.block = block;
+            this.oldX = oldX;
+            this.oldY = oldY;
+        }
+    }
+
     private List<Block> blocks;
     private int moves;
     private static final int GRID_SIZE = 6;
     private boolean isGameOver = false;
+    private Stack<MoveRecord> moveHistory = new Stack<>();
 
     public GameEngine(List<Block> blocks) {
         this.blocks = blocks;
@@ -61,6 +74,7 @@ public class GameEngine {
     public boolean moveBlock(Block block, int newX, int newY) {
         if (block.x == newX && block.y == newY) return false;
         if (canMoveTo(block, newX, newY)) {
+            moveHistory.push(new MoveRecord(block, block.x, block.y));
             block.x = newX;
             block.y = newY;
             moves++;
@@ -68,6 +82,16 @@ public class GameEngine {
             return true;
         }
         return false;
+    }
+
+    public boolean undoMove() {
+        if (moveHistory.isEmpty()) return false;
+        MoveRecord record = moveHistory.pop();
+        record.block.x = record.oldX;
+        record.block.y = record.oldY;
+        moves--;
+        isGameOver = false;
+        return true;
     }
 
     private void checkWin() {

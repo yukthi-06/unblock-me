@@ -24,6 +24,7 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
         tvMoves = findViewById(R.id.tvMoves);
         tvLevel = findViewById(R.id.tvLevel);
         Button btnReset = findViewById(R.id.btnReset);
+        Button btnUndo = findViewById(R.id.btnUndo);
 
         currentPack = getIntent().getStringExtra("PACK_NAME");
         if (currentPack == null) currentPack = "beginner";
@@ -34,6 +35,12 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
         loadLevel(currentLevelIndex);
 
         btnReset.setOnClickListener(v -> loadLevel(currentLevelIndex));
+        btnUndo.setOnClickListener(v -> {
+            if (engine != null && engine.undoMove()) {
+                updateMoves();
+                gameView.invalidate();
+            }
+        });
         gameView.setOnGameListener(this);
     }
 
