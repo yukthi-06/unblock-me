@@ -6,6 +6,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import java.util.List;
+import android.view.View;
 
 public class GameActivity extends AppCompatActivity implements GameView.OnGameListener {
     private GameView gameView;
@@ -14,6 +15,7 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
     private int currentLevelIndex;
     private String currentPack;
     private List<Level> levels;
+    private Button btnSolution;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,6 +27,7 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
         tvLevel = findViewById(R.id.tvLevel);
         Button btnReset = findViewById(R.id.btnReset);
         Button btnUndo = findViewById(R.id.btnUndo);
+        btnSolution = findViewById(R.id.btnSolution);
 
         currentPack = getIntent().getStringExtra("PACK_NAME");
         if (currentPack == null) currentPack = "beginner";
@@ -41,12 +44,28 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
                 gameView.invalidate();
             }
         });
+        btnSolution.setOnClickListener(v -> {
+            Level currentLevel = levels.get(currentLevelIndex);
+            List<SolutionManager.SolutionMove> moves = SolutionManager.loadSolution(currentPack, currentLevel.levelNumber);
+            if (moves != null && !moves.isEmpty()) {
+                // Reset board first before playing solution
+                loadLevel(currentLevelIndex);
+                gameView.playSolution(moves);
+            }
+        });
         gameView.setOnGameListener(this);
     }
 
     private void loadLevel(int index) {
         currentLevelIndex = index;
         Level level = levels.get(index);
+        
+        if (SolutionManager.hasSolution(currentPack, level.levelNumber)) {
+            btnSolution.setVisibility(View.VISIBLE);
+        } else {
+            btnSolution.setVisibility(View.GONE);
+        }
+
         engine = new GameEngine(level.getBlocksCopy());
         gameView.setEngine(engine);
         tvLevel.setText("Level: " + level.levelNumber);

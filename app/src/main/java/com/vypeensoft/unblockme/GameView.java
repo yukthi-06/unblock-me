@@ -18,6 +18,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.Animator;
 import java.io.InputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class GameView extends View {
     private GameEngine engine;
@@ -29,6 +30,11 @@ public class GameView extends View {
 
     private boolean isAnimatingWin = false;
     private float animatedTargetX = -1f;
+
+    private boolean isPlayingSolution = false;
+    private Block animatedSolutionBlock = null;
+    private float solutionAnimatedX = -1f;
+    private float solutionAnimatedY = -1f;
 
     private Bitmap bmpTarget;
     private Bitmap bmpWoodH2;
@@ -105,14 +111,19 @@ public class GameView extends View {
         // Draw blocks
         for (Block b : engine.getBlocks()) {
             float blockX = b.x;
-            if (b.isTarget && isAnimatingWin && animatedTargetX >= 0) {
+            float blockY = b.y;
+
+            if (b == animatedSolutionBlock && isPlayingSolution) {
+                blockX = solutionAnimatedX;
+                blockY = solutionAnimatedY;
+            } else if (b.isTarget && isAnimatingWin && animatedTargetX >= 0) {
                 blockX = animatedTargetX;
             }
 
             float left = blockX * cellSize + 8;
-            float top = b.y * cellSize + 8;
+            float top = blockY * cellSize + 8;
             float right = (b.isHorizontal ? blockX + b.length : blockX + 1) * cellSize - 8;
-            float bottom = (b.isHorizontal ? b.y + 1 : b.y + b.length) * cellSize - 8;
+            float bottom = (b.isHorizontal ? blockY + 1 : blockY + b.length) * cellSize - 8;
             
             RectF rect = new RectF(left, top, right, bottom);
 
@@ -146,7 +157,7 @@ public class GameView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (engine == null || isAnimatingWin) return false;
+        if (engine == null || isAnimatingWin || isPlayingSolution) return false;
         
         // If game is already over and they try a new touch, ignore
         if (engine.isGameOver() && event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -246,6 +257,84 @@ public class GameView extends View {
                 if (listener != null) {
                     listener.onWin();
                 }
+            }
+        });
+        animator.start();
+    }
+
+    public void playSolution(List<SolutionManager.SolutionMove> moves) {
+        if (engine == null || moves == null || moves.isEmpty()) return;
+        isPlayingSolution = true;
+        animateNextSolutionMove(0, moves);
+    }
+
+    private void animateNextSolutionMove(int index, List<SolutionManager.SolutionMove> moves) {
+        if (index >= moves.size() || engine == null) {
+            isPlayingSolution = false;
+            animatedSolutionBlock = null;
+            invalidate();
+            return;
+        }
+
+        SolutionManager.SolutionMove move = moves.get(index);
+        Block blockToMove = null;
+        for (Block b : engine.getBlocks()) {
+            if (b.id.equals(move.car)) {
+                blockToMove = b;
+                break;
+            }
+        }
+
+        if (blockToMove == null) {
+            animateNextSolutionMove(index + 1, moves);
+            return;
+        }
+
+        final Block finalBlock = blockToMove;
+        float startVal = finalBlock.isHorizontal ? finalBlock.x : finalBlock.y;
+        float endVal = startVal + move.distance;
+
+        animatedSolutionBlock = finalBlock;
+        if (finalBlock.isHorizontal) {
+            solutionAnimatedX = startVal;
+            solutionAnimatedY = finalBlock.y;
+        } else {
+            solutionAnimatedX = finalBlock.x;
+            solutionAnimatedY = startVal;
+        }
+
+        ValueAnimator animator = ValueAnimator.ofFloat(startVal, endVal);
+        animator.setDuration(250 * Math.abs(move.distance));
+        animator.addUpdateListener(animation -> {
+            float val = (float) animation.getAnimatedValue();
+            if (finalBlock.isHorizontal) {
+                solutionAnimatedX = val;
+            } else {
+                solutionAnimatedY = val;
+            }
+            invalidate();
+        });
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                // Force update block coordinates
+                if (finalBlock.isHorizontal) {
+                    finalBlock.x = (int) endVal;
+                } else {
+                    finalBlock.y = (int) endVal;
+                }
+                
+                // If this move clears the path, trigger win automatically?
+                // The solution should ideally just move the red block out.
+                if (engine.isPathClearForTarget() && finalBlock.isTarget && finalBlock.x + finalBlock.length == 6) {
+                     engine.setGameOver(true);
+                     if (listener != null) listener.onWin();
+                     isPlayingSolution = false;
+                     animatedSolutionBlock = null;
+                     return;
+                }
+
+                postDelayed(() -> animateNextSolutionMove(index + 1, moves), 150);
             }
         });
         animator.start();
