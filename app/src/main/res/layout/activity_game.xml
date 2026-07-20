@@ -92,7 +92,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp"
         android:layout_marginBottom="24dp"
-        android:background="@android:color/white"
+        android:background="@drawable/bg_green_velvet"
         android:elevation="4dp"/>
 
     <LinearLayout

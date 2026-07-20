@@ -84,15 +84,12 @@ public class GameView extends View {
         super.onDraw(canvas);
         if (engine == null) return;
 
-        // Draw grid background
-        paint.setColor(Color.parseColor("#E0E0E0"));
-        canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
-
-        paint.setColor(Color.WHITE);
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 6; j++) {
-                canvas.drawRect(i * cellSize + 2, j * cellSize + 2, (i + 1) * cellSize - 2, (j + 1) * cellSize - 2, paint);
-            }
+        // Draw grid lines to reveal the background
+        paint.setColor(Color.parseColor("#40000000")); // semi-transparent black
+        paint.setStrokeWidth(2);
+        for (int i = 1; i < 6; i++) {
+            canvas.drawLine(i * cellSize, 0, i * cellSize, getHeight(), paint);
+            canvas.drawLine(0, i * cellSize, getWidth(), i * cellSize, paint);
         }
 
         // Draw board border
