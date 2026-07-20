@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="#F5F5F5">
+    android:background="#81C784">
 
     <LinearLayout
         android:id="@+id/levelNavLayout"
@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:text="◄"
             android:textSize="28sp"
-            android:textColor="#4CAF50"
+            android:textColor="#1E5227"
             android:paddingStart="0dp"
             android:paddingEnd="8dp"
             android:paddingTop="8dp"
@@ -44,7 +44,7 @@
             android:layout_height="wrap_content"
             android:text="►"
             android:textSize="28sp"
-            android:textColor="#4CAF50"
+            android:textColor="#1E5227"
             android:paddingStart="8dp"
             android:paddingEnd="0dp"
             android:paddingTop="8dp"
