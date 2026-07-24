@@ -37,43 +37,61 @@ public class LevelManager {
             return levels; // Returns empty list if dir doesn't exist
         }
 
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".json") || name.toLowerCase().endsWith(".xml"));
         if (files == null) return levels;
 
         for (File file : files) {
             try {
-                InputStream is = new FileInputStream(file);
-                int size = is.available();
-                byte[] buffer = new byte[size];
-                is.read(buffer);
-                is.close();
-                String jsonStr = new String(buffer, "UTF-8");
+                if (file.getName().toLowerCase().endsWith(".json")) {
+                    InputStream is = new FileInputStream(file);
+                    int size = is.available();
+                    byte[] buffer = new byte[size];
+                    is.read(buffer);
+                    is.close();
+                    String jsonStr = new String(buffer, "UTF-8");
 
-                JSONObject json = new JSONObject(jsonStr);
-                int id = json.getInt("id");
-                Level level = new Level(id);
-                if (json.has("difficulty")) {
-                    level.difficulty = json.getString("difficulty");
-                }
-                if (json.has("minimumMoves")) {
-                    level.minimumMoves = json.getInt("minimumMoves");
-                }
+                    JSONObject json = new JSONObject(jsonStr);
+                    int id = json.getInt("id");
+                    Level level = new Level(id);
+                    if (json.has("difficulty")) {
+                        level.difficulty = json.getString("difficulty");
+                    }
+                    if (json.has("minimumMoves")) {
+                        level.minimumMoves = json.getInt("minimumMoves");
+                    }
 
-                JSONArray cars = json.getJSONArray("cars");
-                for (int i = 0; i < cars.length(); i++) {
-                    JSONObject car = cars.getJSONObject(i);
-                    String carId = car.getString("id");
-                    int x = car.getInt("x");
-                    int y = car.getInt("y");
-                    int length = car.getInt("length");
-                    boolean horizontal = car.getBoolean("horizontal");
-                    
-                    boolean isTarget = carId.equals("X");
-                    int color = isTarget ? Color.RED : getColorForId(carId);
+                    JSONArray cars = json.getJSONArray("cars");
+                    for (int i = 0; i < cars.length(); i++) {
+                        JSONObject car = cars.getJSONObject(i);
+                        String carId = car.getString("id");
+                        int x = car.getInt("x");
+                        int y = car.getInt("y");
+                        int length = car.getInt("length");
+                        boolean horizontal = car.getBoolean("horizontal");
+                        
+                        boolean isTarget = carId.equals("X") || carId.equals("@");
+                        int color = isTarget ? Color.RED : getColorForId(carId);
 
-                    level.addBlock(new Block(carId, x, y, length, horizontal, color, isTarget));
+                        level.addBlock(new Block(carId.equals("@") ? "X" : carId, x, y, length, horizontal, color, isTarget));
+                    }
+                    levels.add(level);
+                } else if (file.getName().toLowerCase().endsWith(".xml")) {
+                    int id = 0;
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+").matcher(file.getName());
+                    if (m.find()) {
+                        try {
+                            id = Integer.parseInt(m.group());
+                        } catch (NumberFormatException e) {
+                            id = file.getName().hashCode();
+                        }
+                    } else {
+                        id = file.getName().hashCode();
+                    }
+                    Level xmlLevel = parseXmlLevel(file, id);
+                    if (xmlLevel != null) {
+                        levels.add(xmlLevel);
+                    }
                 }
-                levels.add(level);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -87,6 +105,81 @@ public class LevelManager {
         });
 
         return levels;
+    }
+    
+    private static Level parseXmlLevel(File file, int id) {
+        try {
+            Level level = new Level(id);
+            javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+            org.w3c.dom.Document doc = builder.parse(file);
+
+            org.w3c.dom.Element root = doc.getDocumentElement();
+            
+            org.w3c.dom.NodeList conditionNodes = doc.getElementsByTagName("resource");
+            for (int i = 0; i < conditionNodes.getLength(); i++) {
+                org.w3c.dom.Element res = (org.w3c.dom.Element) conditionNodes.item(i);
+                if ("moves".equals(res.getAttribute("name"))) {
+                    try {
+                        level.minimumMoves = Integer.parseInt(res.getTextContent().trim());
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+
+            org.w3c.dom.NodeList lineNodes = doc.getElementsByTagName("line");
+            String[][] grid = new String[6][6];
+            for (int i = 0; i < lineNodes.getLength() && i < 6; i++) {
+                org.w3c.dom.Element lineElem = (org.w3c.dom.Element) lineNodes.item(i);
+                String[] parts = lineElem.getTextContent().trim().split(",");
+                for (int j = 0; j < parts.length && j < 6; j++) {
+                    grid[i][j] = parts[j].trim();
+                }
+            }
+
+            List<String> processedIds = new ArrayList<>();
+            for (int y = 0; y < 6; y++) {
+                for (int x = 0; x < 6; x++) {
+                    String cell = grid[y][x];
+                    if (cell != null && !cell.equals("0") && !processedIds.contains(cell)) {
+                        processedIds.add(cell);
+                        
+                        int length = 1;
+                        boolean horizontal = true;
+                        
+                        for (int k = x + 1; k < 6; k++) {
+                            if (cell.equals(grid[y][k])) {
+                                length++;
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        if (length == 1) {
+                            for (int k = y + 1; k < 6; k++) {
+                                if (cell.equals(grid[k][x])) {
+                                    length++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (length > 1) {
+                                horizontal = false;
+                            }
+                        }
+                        
+                        boolean isTarget = cell.equals("@") || cell.equals("X");
+                        int color = isTarget ? Color.RED : getColorForId(cell);
+                        String blockId = cell.equals("@") ? "X" : cell;
+                        
+                        level.addBlock(new Block(blockId, x, y, length, horizontal, color, isTarget));
+                    }
+                }
+            }
+            return level;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
     
     private static int getColorForId(String id) {
