@@ -248,6 +248,7 @@ public class GameView extends View {
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
+                engine.recordFinalMove(finalTarget, (int)startX, finalTarget.y, (int)endX, finalTarget.y);
                 finalTarget.x = (int) endX;
                 engine.setGameOver(true);
                 isAnimatingWin = false;

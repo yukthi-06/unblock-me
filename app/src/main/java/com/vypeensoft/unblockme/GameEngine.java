@@ -8,10 +8,14 @@ public class GameEngine {
         public Block block;
         public int oldX;
         public int oldY;
-        public MoveRecord(Block block, int oldX, int oldY) {
+        public int newX;
+        public int newY;
+        public MoveRecord(Block block, int oldX, int oldY, int newX, int newY) {
             this.block = block;
             this.oldX = oldX;
             this.oldY = oldY;
+            this.newX = newX;
+            this.newY = newY;
         }
     }
 
@@ -74,7 +78,7 @@ public class GameEngine {
     public boolean moveBlock(Block block, int newX, int newY) {
         if (block.x == newX && block.y == newY) return false;
         if (canMoveTo(block, newX, newY)) {
-            moveHistory.push(new MoveRecord(block, block.x, block.y));
+            moveHistory.push(new MoveRecord(block, block.x, block.y, newX, newY));
             block.x = newX;
             block.y = newY;
             moves++;
@@ -82,6 +86,10 @@ public class GameEngine {
             return true;
         }
         return false;
+    }
+
+    public void recordFinalMove(Block block, int oldX, int oldY, int newX, int newY) {
+        moveHistory.push(new MoveRecord(block, oldX, oldY, newX, newY));
     }
 
     public boolean undoMove() {
@@ -128,5 +136,14 @@ public class GameEngine {
             }
         }
         return true;
+    }
+
+    public List<SolutionManager.SolutionMove> getSolutionPath() {
+        List<SolutionManager.SolutionMove> path = new java.util.ArrayList<>();
+        for (MoveRecord record : moveHistory) {
+            int distance = record.block.isHorizontal ? (record.newX - record.oldX) : (record.newY - record.oldY);
+            path.add(new SolutionManager.SolutionMove(record.block.id, distance));
+        }
+        return path;
     }
 }

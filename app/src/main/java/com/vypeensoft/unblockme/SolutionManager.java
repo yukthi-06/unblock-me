@@ -65,4 +65,32 @@ public class SolutionManager {
         }
         return moves;
     }
+
+    public static void saveSolution(String pack, int levelNumber, List<SolutionMove> moves, long timeTakenMillis) {
+        String fileName = "level_" + levelNumber + "_solution.json";
+        File dir = new File("/sdcard/Vypeensoft/Unblock_Me/game/solutions/" + pack);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        File file = new File(dir, fileName);
+        try {
+            JSONObject root = new JSONObject();
+            root.put("timeTaken", timeTakenMillis);
+            
+            JSONArray solutionArray = new JSONArray();
+            for (SolutionMove move : moves) {
+                JSONObject moveJson = new JSONObject();
+                moveJson.put("car", move.car);
+                moveJson.put("distance", move.distance);
+                solutionArray.put(moveJson);
+            }
+            root.put("solution", solutionArray);
+            
+            java.io.FileWriter writer = new java.io.FileWriter(file);
+            writer.write(root.toString(2)); // format with 2 space indent
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

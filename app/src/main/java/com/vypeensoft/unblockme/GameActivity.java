@@ -134,12 +134,18 @@ public class GameActivity extends AppCompatActivity implements GameView.OnGameLi
 
     @Override
     public void onWin() {
+        long timeTakenMillis = timerStarted ? (SystemClock.uptimeMillis() - startTime) : 0;
         stopTimer();
         // Save progress
         getSharedPreferences("GAME_PROGRESS", MODE_PRIVATE)
                 .edit()
                 .putInt("LAST_COMPLETED_" + currentPack, currentLevelIndex)
                 .apply();
+
+        // Save solution
+        Level currentLevel = levels.get(currentLevelIndex);
+        List<SolutionManager.SolutionMove> solutionPath = engine.getSolutionPath();
+        SolutionManager.saveSolution(currentPack, currentLevel.levelNumber, solutionPath, timeTakenMillis);
 
         String msg = "Solved level " + levels.get(currentLevelIndex).levelNumber + " in " + engine.getMoves() + " moves!";
         android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
